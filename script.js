@@ -402,9 +402,18 @@ function initSmoothScroll() {
     });
 }
 
-/* ==================== PARALLAX ON SCROLL ==================== */
+/* ==================== PARALLAX & PROGRESS ON SCROLL ==================== */
 window.addEventListener('scroll', () => {
     const scrolled = window.scrollY;
+
+    // Scroll Progress Bar
+    const progressBar = document.getElementById('scrollProgressBar');
+    if (progressBar) {
+        const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
+        const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+        const scrolledPercentage = (winScroll / height) * 100;
+        progressBar.style.width = scrolledPercentage + "%";
+    }
 
     // Hero parallax
     const heroContent = document.querySelector('.hero-content');
