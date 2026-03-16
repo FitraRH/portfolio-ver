@@ -3,9 +3,9 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ScrollReveal from './ScrollReveal';
-import { supabase } from '@/utils/supabase';
+import { supabase } from './supabaseSim'; // Simulation import
 
-const RAILWAY_API_URL = process.env.NEXT_PUBLIC_RAILWAY_API_URL || 'https://thorough-charm-production.up.railway.app';
+const RAILWAY_BACKEND_URL = 'http://localhost:3001'; // Simulated Railway URL
 
 // Lightweight markdown renderer — no external deps needed
 function MarkdownRenderer({ content }) {
@@ -158,11 +158,13 @@ function ChatPanel({ feature }) {
       const controller = new AbortController();
       abortRef.current = controller;
 
-      const res = await fetch(`${RAILWAY_API_URL}${feature.endpoint}`, {
+      // SIMULATION: Point to Railway Backend instead of local Vercel /api
+      const remoteEndpoint = `${RAILWAY_BACKEND_URL}${feature.endpoint}`;
+
+      const res = await fetch(remoteEndpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          featureId: feature.id,
           messages: allMessages.map((m) => ({ role: m.role, content: m.content })),
         }),
         signal: controller.signal,
@@ -196,18 +198,12 @@ function ChatPanel({ feature }) {
         );
       }
 
-      // Production Analytics: Log usage to Supabase
-      try {
-        await supabase.from('ai_logs').insert({
-          feature_id: feature.id,
-          prompt: userText,
-          completion: accumulated,
-          model: feature.model,
-          timestamp: new Date().toISOString()
-        });
-      } catch (logError) {
-        console.error('Logging to Supabase failed:', logError);
-      }
+      // SIMULATION: After successful AI response, log to Supabase for analytics
+      await supabase.from('ai_usage_logs').insert({
+        feature: feature.id,
+        timestamp: new Date().toISOString(),
+        message_count: allMessages.length + 1
+      });
 
     } catch (error) {
       if (error.name === 'AbortError') return;
