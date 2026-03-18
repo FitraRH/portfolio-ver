@@ -197,17 +197,19 @@ function ChatPanel({ feature }) {
         );
       }
 
-      // Production Analytics: Log usage to Supabase
-      try {
-        await supabase.from('ai_logs').insert({
-          feature_id: feature.id,
-          prompt: userText,
-          completion: accumulated,
-          model: feature.model,
-          timestamp: new Date().toISOString()
-        });
-      } catch (logError) {
-        console.error('Logging to Supabase failed:', logError);
+      // Production Analytics: Log usage to Supabase (only if configured)
+      if (supabase) {
+        try {
+          await supabase.from('ai_logs').insert({
+            feature_id: feature.id,
+            prompt: userText,
+            completion: accumulated,
+            model: feature.model,
+            timestamp: new Date().toISOString()
+          });
+        } catch (logError) {
+          console.error('Logging to Supabase failed:', logError);
+        }
       }
 
     } catch (error) {
