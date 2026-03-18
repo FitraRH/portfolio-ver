@@ -1,4 +1,5 @@
 'use client';
+// Deployment trigger: decoupled architecture v2
 
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';

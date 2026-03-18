@@ -58,29 +58,35 @@ app.post('/api/chat', async (req, res) => {
   const { messages, featureId } = req.body;
 
   try {
+    console.log(`[AI Request] feature: ${featureId}, messages: ${messages?.length}`);
+
     const result = await streamText({
       model: groq('llama-3.1-8b-instant'),
       system: SYSTEM_PROMPT,
       messages,
       onFinish: async (completion) => {
-        console.log(`[AI Finish] Logging to Supabase...`);
+        const lastMessage = messages[messages.length - 1]?.content || 'N/A';
+        console.log(`[AI Finish] Stream ended. Attempting log for: "${lastMessage.substring(0, 30)}..."`);
+        
         try {
           const { error } = await supabase.from('ai_logs').insert({
             feature_id: featureId || 'general',
-            prompt: messages[messages.length - 1].content,
+            prompt: lastMessage,
             completion: completion.text,
-            model: 'llama-3.1-8b-instant',
-            timestamp: new Date().toISOString()
+            model: 'llama-3.1-8b-instant'
           });
-          if (error) throw error;
-          console.log(`[Supabase] Logged successfully.`);
-        } catch (dbError) {
-          console.error('[Supabase Error]', dbError.message);
+          
+          if (error) {
+            console.error(`[Supabase Error] Insert failed: ${error.message}`);
+          } else {
+            console.log(`[Supabase Success] Row inserted for feature: ${featureId}`);
+          }
+        } catch (dbErr) {
+          console.error(`[Fatal DB Error] ${dbErr.message}`);
         }
       }
     });
 
-    // Use pipeTextStreamToResponse for Express.js compatibility
     result.pipeTextStreamToResponse(res);
   } catch (error) {
     console.error('Backend AI Error:', error);
