@@ -35,6 +35,24 @@ app.get('/health', (req, res) => {
   res.json({ status: 'live', engine: 'docker-alpine', region: 'APAC' });
 });
 
+// Database Test
+app.get('/api/test-db', async (req, res) => {
+  try {
+    const { data, error } = await supabase.from('ai_logs').insert({
+      feature_id: 'test-endpoint',
+      prompt: 'Is database connected?',
+      completion: 'Yes, it works!',
+      model: 'system-test'
+    });
+    
+    if (error) throw error;
+    res.json({ success: true, data });
+  } catch (err) {
+    console.error('Test DB Error:', err.message);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // Generic AI Chat Endpoint with Streaming and Logging
 app.post('/api/chat', async (req, res) => {
   const { messages, featureId } = req.body;
@@ -45,22 +63,25 @@ app.post('/api/chat', async (req, res) => {
       system: SYSTEM_PROMPT,
       messages,
       onFinish: async (completion) => {
-        // Log to Supabase after completion
+        console.log(`[AI Finish] Logging to Supabase...`);
         try {
-          await supabase.from('ai_logs').insert({
+          const { error } = await supabase.from('ai_logs').insert({
             feature_id: featureId || 'general',
             prompt: messages[messages.length - 1].content,
             completion: completion.text,
             model: 'llama-3.1-8b-instant',
             timestamp: new Date().toISOString()
           });
+          if (error) throw error;
+          console.log(`[Supabase] Logged successfully.`);
         } catch (dbError) {
-          console.error('Database logging error:', dbError);
+          console.error('[Supabase Error]', dbError.message);
         }
       }
     });
 
-    return result.toTextStreamResponse(res);
+    // Use pipeTextStreamToResponse for Express.js compatibility
+    result.pipeTextStreamToResponse(res);
   } catch (error) {
     console.error('Backend AI Error:', error);
     res.status(500).json({ error: 'Failed to process AI request on Railway.' });

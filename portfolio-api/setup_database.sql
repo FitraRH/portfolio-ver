@@ -11,8 +11,8 @@ CREATE TABLE IF NOT EXISTS public.ai_logs (
     metadata JSONB
 );
 
--- Enable Row Level Security (RLS) if you want, but for now we keep it simple
--- ALTER TABLE public.ai_logs ENABLE ROW LEVEL SECURITY;
+-- Disable RLS to ensure logging always works without complex policies
+ALTER TABLE public.ai_logs DISABLE ROW LEVEL SECURITY;
 
 -- Grant access to the service role (which we will use in Railway)
 GRANT ALL ON public.ai_logs TO service_role;
